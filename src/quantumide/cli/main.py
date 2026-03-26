@@ -273,6 +273,33 @@ def simulate(circuit_file: str | None, shots: int, noisy: bool, top: int) -> Non
 
 
 # ---------------------------------------------------------------------------
+# interactive
+# ---------------------------------------------------------------------------
+
+@cli.command()
+@click.argument("circuit_file", type=click.Path(exists=True), required=False)
+def interactive(circuit_file: str | None) -> None:
+    """Launch the interactive TUI. Loads CIRCUIT_FILE or the active session."""
+    from quantumide.tui.app import QuantumIDEApp
+
+    circuit = None
+    if circuit_file:
+        try:
+            circuit = load_circuit(Path(circuit_file))
+        except Exception as exc:
+            console.print(f"[red]Error loading file: {exc}[/red]")
+            raise SystemExit(1)
+    else:
+        try:
+            circuit = load_session()
+        except FileNotFoundError:
+            circuit = None  # start with blank circuit
+
+    app = QuantumIDEApp(circuit=circuit)
+    app.run()
+
+
+# ---------------------------------------------------------------------------
 # template
 # ---------------------------------------------------------------------------
 
