@@ -231,6 +231,138 @@ def list_available_gates() -> None:
 
 
 # ---------------------------------------------------------------------------
+# simulate
+# ---------------------------------------------------------------------------
+
+@cli.command()
+@click.argument("circuit_file", type=click.Path(exists=True), required=False)
+@click.option("--shots", "-s", default=0, show_default=True, type=int, help="Sample circuit N times (0 = statevector only).")
+@click.option("--noisy", is_flag=True, default=False, help="Run with depolarising noise model.")
+@click.option("--top", default=4, show_default=True, type=int, help="Number of top states to display.")
+def simulate(circuit_file: str | None, shots: int, noisy: bool, top: int) -> None:
+    """Simulate the current session or CIRCUIT_FILE."""
+    from quantumide.simulation import QuantumSimulator
+    from rich.table import Table as RichTable
+
+    try:
+        circuit = load_circuit(Path(circuit_file)) if circuit_file else load_session()
+    except FileNotFoundError as exc:
+        console.print(f"[yellow]{exc}[/yellow]")
+        raise SystemExit(1)
+
+    sim = QuantumSimulator(noisy=noisy)
+    result = sim.run(circuit)
+
+    # State vector / probabilities
+    table = RichTable(title=f"Simulation — [bold]{circuit.name}[/bold]" + (" (noisy)" if noisy else ""))
+    table.add_column("State", style="cyan bold")
+    table.add_column("Probability", justify="right")
+
+    for state, prob in result.top_states(top).items():
+        table.add_row(f"|{state}⟩", f"{prob:.4f}")
+
+    console.print(table)
+
+    from quantumide.visualization.ascii import render_probabilities, render_counts
+
+    render_probabilities(result, console, top=top)
+
+    if shots > 0:
+        result.sample(shots)
+        render_counts(result, console)
+
+
+# ---------------------------------------------------------------------------
+# optimize
+# ---------------------------------------------------------------------------
+
+@cli.command()
+@click.argument("circuit_file", type=click.Path(exists=True), required=False)
+@click.option("--basis", "-b", default=None, show_default=True,
+              type=click.Choice(["clifford_t", "ibm", "native"], case_sensitive=False),
+              help="Transpile to target basis after optimization.")
+@click.option("--save-session/--no-save-session", default=True, show_default=True,
+              help="Replace the active session with the optimized circuit.")
+def optimize(circuit_file: str | None, basis: str | None, save_session: bool) -> None:
+    """Optimize the current session or CIRCUIT_FILE."""
+    from quantumide.optimization import full_optimize
+
+    try:
+        circuit = load_circuit(Path(circuit_file)) if circuit_file else load_session()
+    except FileNotFoundError as exc:
+        console.print(f"[yellow]{exc}[/yellow]")
+        raise SystemExit(1)
+
+    before_gates = circuit.gate_count()
+    before_depth = circuit.depth()
+
+    optimized = full_optimize(circuit, basis=basis)
+
+    after_gates = optimized.gate_count()
+    after_depth = optimized.depth()
+
+    console.print(
+        f"[green]Optimized '[bold]{circuit.name}[/bold]': "
+        f"gates {before_gates} → {after_gates} "
+        f"([bold]{before_gates - after_gates:+d}[/bold]), "
+        f"depth {before_depth} → {after_depth} "
+        f"([bold]{before_depth - after_depth:+d}[/bold]).[/green]"
+    )
+    if basis:
+        console.print(f"[dim]Transpiled to basis: {basis}[/dim]")
+
+    if save_session:
+        save_session_fn = save_session  # avoid name clash with click option
+        from quantumide.io.serialization import save_session as _save_session
+        _save_session(optimized)
+
+    _print_circuit(optimized)
+
+
+# ---------------------------------------------------------------------------
+# export
+# ---------------------------------------------------------------------------
+
+@cli.command()
+@click.argument("output", type=click.Path())
+@click.argument("circuit_file", type=click.Path(exists=True), required=False)
+@click.option(
+    "--format", "-f", "fmt",
+    type=click.Choice(["svg", "png", "prob", "counts"], case_sensitive=False),
+    default="svg", show_default=True,
+    help="Export format: svg (circuit diagram), png (probability chart), prob (probability chart png), counts (counts chart png).",
+)
+@click.option("--shots", "-s", default=1024, show_default=True, type=int, help="Shots for counts export.")
+def export(output: str, circuit_file: str | None, fmt: str, shots: int) -> None:
+    """Export the current session or CIRCUIT_FILE to OUTPUT."""
+    from quantumide.visualization.svg import render_svg
+    from quantumide.visualization.charts import plot_probabilities, plot_counts
+    from quantumide.simulation import QuantumSimulator
+
+    try:
+        circuit = load_circuit(Path(circuit_file)) if circuit_file else load_session()
+    except FileNotFoundError as exc:
+        console.print(f"[yellow]{exc}[/yellow]")
+        raise SystemExit(1)
+
+    out_path = Path(output)
+    fmt = fmt.lower()
+
+    if fmt == "svg":
+        render_svg(circuit, out_path)
+        console.print(f"[green]SVG circuit diagram saved to [bold]{output}[/bold].[/green]")
+    elif fmt in ("png", "prob"):
+        result = QuantumSimulator().run(circuit)
+        plot_probabilities(result, out_path, title=f"{circuit.name} — Probabilities")
+        console.print(f"[green]Probability chart saved to [bold]{output}[/bold].[/green]")
+    elif fmt == "counts":
+        result = QuantumSimulator().run(circuit)
+        result.sample(shots)
+        plot_counts(result, out_path, title=f"{circuit.name} — Counts")
+        console.print(f"[green]Counts chart saved to [bold]{output}[/bold].[/green]")
+
+
+# ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
 
