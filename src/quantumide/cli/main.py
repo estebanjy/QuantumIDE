@@ -273,6 +273,29 @@ def simulate(circuit_file: str | None, shots: int, noisy: bool, top: int) -> Non
 
 
 # ---------------------------------------------------------------------------
+# template
+# ---------------------------------------------------------------------------
+
+@cli.command()
+@click.argument("name", type=click.Choice(["bell", "ghz", "qft", "grover", "shor"], case_sensitive=False))
+@click.option("--qubits", "-q", default=None, type=int, help="Override qubit count (for ghz, qft, grover).")
+def template(name: str, qubits: int | None) -> None:
+    """Load a built-in circuit template as the active session."""
+    from quantumide.core.templates import TEMPLATES
+
+    fn = TEMPLATES[name.lower()]
+    try:
+        circuit = fn(qubits) if qubits is not None and name.lower() in ("ghz", "qft", "grover") else fn()
+    except (TypeError, ValueError) as exc:
+        console.print(f"[red]Error: {exc}[/red]")
+        raise SystemExit(1)
+
+    save_session(circuit)
+    _print_circuit(circuit)
+    console.print(f"\n[green]Template '[bold]{name}[/bold]' loaded as active session.[/green]")
+
+
+# ---------------------------------------------------------------------------
 # optimize
 # ---------------------------------------------------------------------------
 
@@ -328,9 +351,9 @@ def optimize(circuit_file: str | None, basis: str | None, save_session: bool) ->
 @click.argument("circuit_file", type=click.Path(exists=True), required=False)
 @click.option(
     "--format", "-f", "fmt",
-    type=click.Choice(["svg", "png", "prob", "counts"], case_sensitive=False),
+    type=click.Choice(["svg", "png", "prob", "counts", "qasm2", "qasm3", "pickle"], case_sensitive=False),
     default="svg", show_default=True,
-    help="Export format: svg (circuit diagram), png (probability chart), prob (probability chart png), counts (counts chart png).",
+    help="Export format.",
 )
 @click.option("--shots", "-s", default=1024, show_default=True, type=int, help="Shots for counts export.")
 def export(output: str, circuit_file: str | None, fmt: str, shots: int) -> None:
@@ -338,6 +361,8 @@ def export(output: str, circuit_file: str | None, fmt: str, shots: int) -> None:
     from quantumide.visualization.svg import render_svg
     from quantumide.visualization.charts import plot_probabilities, plot_counts
     from quantumide.simulation import QuantumSimulator
+    from quantumide.io.qasm import export_qasm2, export_qasm3
+    from quantumide.io.pickle_io import save_pickle
 
     try:
         circuit = load_circuit(Path(circuit_file)) if circuit_file else load_session()
@@ -360,6 +385,15 @@ def export(output: str, circuit_file: str | None, fmt: str, shots: int) -> None:
         result.sample(shots)
         plot_counts(result, out_path, title=f"{circuit.name} — Counts")
         console.print(f"[green]Counts chart saved to [bold]{output}[/bold].[/green]")
+    elif fmt == "qasm2":
+        export_qasm2(circuit, out_path)
+        console.print(f"[green]QASM 2.0 saved to [bold]{output}[/bold].[/green]")
+    elif fmt == "qasm3":
+        export_qasm3(circuit, out_path)
+        console.print(f"[green]QASM 3.0 saved to [bold]{output}[/bold].[/green]")
+    elif fmt == "pickle":
+        save_pickle(circuit, out_path)
+        console.print(f"[green]Pickle saved to [bold]{output}[/bold].[/green]")
 
 
 # ---------------------------------------------------------------------------

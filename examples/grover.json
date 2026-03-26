@@ -1,0 +1,122 @@
+{
+  "num_qubits": 2,
+  "name": "grover_2",
+  "gates": [
+    {
+      "name": "H",
+      "targets": [
+        0
+      ],
+      "controls": []
+    },
+    {
+      "name": "H",
+      "targets": [
+        1
+      ],
+      "controls": []
+    },
+    {
+      "name": "X",
+      "targets": [
+        0
+      ],
+      "controls": []
+    },
+    {
+      "name": "X",
+      "targets": [
+        1
+      ],
+      "controls": []
+    },
+    {
+      "name": "CZ",
+      "targets": [
+        1
+      ],
+      "controls": [
+        0
+      ]
+    },
+    {
+      "name": "X",
+      "targets": [
+        0
+      ],
+      "controls": []
+    },
+    {
+      "name": "X",
+      "targets": [
+        1
+      ],
+      "controls": []
+    },
+    {
+      "name": "H",
+      "targets": [
+        0
+      ],
+      "controls": []
+    },
+    {
+      "name": "H",
+      "targets": [
+        1
+      ],
+      "controls": []
+    },
+    {
+      "name": "X",
+      "targets": [
+        0
+      ],
+      "controls": []
+    },
+    {
+      "name": "X",
+      "targets": [
+        1
+      ],
+      "controls": []
+    },
+    {
+      "name": "CZ",
+      "targets": [
+        1
+      ],
+      "controls": [
+        0
+      ]
+    },
+    {
+      "name": "X",
+      "targets": [
+        0
+      ],
+      "controls": []
+    },
+    {
+      "name": "X",
+      "targets": [
+        1
+      ],
+      "controls": []
+    },
+    {
+      "name": "H",
+      "targets": [
+        0
+      ],
+      "controls": []
+    },
+    {
+      "name": "H",
+      "targets": [
+        1
+      ],
+      "controls": []
+    }
+  ]
+}

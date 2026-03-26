@@ -1,0 +1,78 @@
+{
+  "num_qubits": 4,
+  "name": "shor",
+  "gates": [
+    {
+      "name": "H",
+      "targets": [
+        0
+      ],
+      "controls": []
+    },
+    {
+      "name": "H",
+      "targets": [
+        1
+      ],
+      "controls": []
+    },
+    {
+      "name": "CNOT",
+      "targets": [
+        2
+      ],
+      "controls": [
+        0
+      ]
+    },
+    {
+      "name": "CNOT",
+      "targets": [
+        3
+      ],
+      "controls": [
+        1
+      ]
+    },
+    {
+      "name": "CNOT",
+      "targets": [
+        2
+      ],
+      "controls": [
+        1
+      ]
+    },
+    {
+      "name": "CZ",
+      "targets": [
+        1
+      ],
+      "controls": [
+        0
+      ]
+    },
+    {
+      "name": "H",
+      "targets": [
+        0
+      ],
+      "controls": []
+    },
+    {
+      "name": "H",
+      "targets": [
+        1
+      ],
+      "controls": []
+    },
+    {
+      "name": "SWAP",
+      "targets": [
+        0,
+        1
+      ],
+      "controls": []
+    }
+  ]
+}

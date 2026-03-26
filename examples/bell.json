@@ -1,0 +1,22 @@
+{
+  "num_qubits": 2,
+  "name": "bell",
+  "gates": [
+    {
+      "name": "H",
+      "targets": [
+        0
+      ],
+      "controls": []
+    },
+    {
+      "name": "CNOT",
+      "targets": [
+        1
+      ],
+      "controls": [
+        0
+      ]
+    }
+  ]
+}
